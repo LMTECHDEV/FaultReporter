@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4 display-4 text-primary">Fault Reporter</h1>
+    <div id="fault-forms" class="fault-form-container">
+        <form method="post" enctype="multipart/form-data" class="fault-form mb-4 p-3 border rounded shadow-sm bg-light" data-form-id="1">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_image1" class="form-label">Image 1 (Take Photo):</label>
+                <input type="file" name="image1" id="id_image1" accept="image/*" capture="camera" class="form-control mt-2" required>
+            </div>
+            <div class="mb-3">
+                <label for="id_image2" class="form-label">Image 2 (Optional, Take Photo):</label>
+                <input type="file" name="image2" id="id_image2" accept="image/*" capture="camera" class="form-control mt-2">
+            </div>
+            <div class="mb-3">
+                <label for="id_image3" class="form-label">Image 3 (Optional, Take Photo):</label>
+                <input type="file" name="image3" id="id_image3" accept="image/*" capture="camera" class="form-control mt-2">
+            </div>
+            <div class="mb-3">
+                <label for="id_image4" class="form-label">Image 4 (Optional, Take Photo):</label>
+                <input type="file" name="image4" id="id_image4" accept="image/*" capture="camera" class="form-control mt-2">
+            </div>
+            <div class="mb-3">
+                <label for="id_image5" class="form-label">Image 5 (Optional, Take Photo):</label>
+                <input type="file" name="image5" id="id_image5" accept="image/*" capture="camera" class="form-control mt-2">
+            </div>
+            <div class="mb-3">
+                <label for="id_location" class="form-label">Location:</label>
+                <input type="text" name="location" id="id_location" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="id_description" class="form-label">Description:</label>
+                <textarea name="description" id="id_description" class="form-control" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 submit-fault">Submit Fault</button>
+        </form>
+    </div>
+    <div class="d-flex justify-content-between mb-4">
+        <button id="add-fault" class="btn btn-success"><i class="bi bi-check"></i> Add 10 More Faults</button>
+        <a href="{% url 'generate_pdf' %}" class="btn btn-info">Download PDF</a>
+    </div>
+
+    <h2>Reported Faults</h2>
+    <div class="fault-list">
+        {% for fault in faults %}
+        <div class="fault-item">
+            <h3>Fault {{ forloop.counter }}</h3>
+            <p><strong>Location:</strong> {{ fault.location }}</p>
+            <p><strong>Description:</strong> {{ fault.description|truncatewords:20 }}</p>
+            {% if fault.image1 %}
+                <img src="{{ fault.image1.url }}" alt="Fault Image 1" style="max-width: 200px;" class="img-thumbnail">
+            {% endif %}
+            {% if fault.image2 %}
+                <img src="{{ fault.image2.url }}" alt="Fault Image 2" style="max-width: 200px;" class="img-thumbnail">
+            {% endif %}
+            {% if fault.image3 %}
+                <img src="{{ fault.image3.url }}" alt="Fault Image 3" style="max-width: 200px;" class="img-thumbnail">
+            {% endif %}
+            {% if fault.image4 %}
+                <img src="{{ fault.image4.url }}" alt="Fault Image 4" style="max-width: 200px;" class="img-thumbnail">
+            {% endif %}
+            {% if fault.image5 %}
+                <img src="{{ fault.image5.url }}" alt="Fault Image 5" style="max-width: 200px;" class="img-thumbnail">
+            {% endif %}
+            <a href="{% url 'delete_fault' fault.id %}" class="delete-fault" data-id="{{ fault.id }}">Delete</a>
+        </div>
+        {% empty %}
+            <p>No faults reported yet.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Modal for delete confirmation -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this fault?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fault-form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .fault-form {
+        border-color: #007bff !important;
+        transition: all 0.3s ease;
+    }
+    .fault-form:hover {
+        box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+        transform: translateY(-2px);
+    }
+    .form-label {
+        font-weight: bold;
+        color: #333;
+    }
+    .btn-primary, .btn-success, .btn-info, .btn-danger {
+        transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #004085;
+    }
+    .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
+    .btn-info:hover {
+        background-color: #117a8b;
+        border-color: #10707f;
+    }
+    .btn-danger:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+    }
+    .list-group-item {
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    .list-group-item:hover {
+        background-color: #e9ecef;
+        transform: translateX(5px);
+    }
+    .img-thumbnail {
+        border-radius: 5px;
+    }
+    @media (max-width: 768px) {
+        .fault-form-container {
+            max-width: 100%;
+        }
+        .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .d-flex {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    let faultCount = 1;
+
+    // Add 10 more fault forms
+    $('#add-fault').click(function() {
+        for (let i = 0; i < 10; i++) {
+            faultCount++;
+            $('#fault-forms').append(
+                `<form method="post" enctype="multipart/form-data" class="fault-form mb-4 p-3 border rounded shadow-sm bg-light" data-form-id="${faultCount}">
+                    {% csrf_token %}
+                    <h4>Fault ${faultCount}</h4>
+                    <div class="mb-3">
+                        <label for="id_image1_${faultCount}" class="form-label">Image 1 (Take Photo):</label>
+                        <input type="file" name="image1_${faultCount}" class="form-control" id="id_image1_${faultCount}" accept="image/*" capture="camera" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_image2_${faultCount}" class="form-label">Image 2 (Optional, Take Photo):</label>
+                        <input type="file" name="image2_${faultCount}" class="form-control" id="id_image2_${faultCount}" accept="image/*" capture="camera">
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_image3_${faultCount}" class="form-label">Image 3 (Optional, Take Photo):</label>
+                        <input type="file" name="image3_${faultCount}" class="form-control" id="id_image3_${faultCount}" accept="image/*" capture="camera">
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_image4_${faultCount}" class="form-label">Image 4 (Optional, Take Photo):</label>
+                        <input type="file" name="image4_${faultCount}" class="form-control" idხ
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_image5_${faultCount}" class="form-label">Image 5 (Optional, Take Photo):</label>
+                        <input type="file" name="image5_${faultCount}" class="form-control" id="id_image5_${faultCount}" accept="image/*" capture="camera">
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_location_${faultCount}" class="form-label">Location:</label>
+                        <input type="text" name="location_${faultCount}" class="form-control" id="id_location_${faultCount}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_description_${faultCount}" class="form-label">Description:</label>
+                        <textarea name="description_${faultCount}" class="form-control" id="id_description_${faultCount}" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 submit-fault">Submit Fault ${faultCount}</button>
+                </form>`
+            );
+        }
+    });
+
+    // Handle form submission
+    $(document).on('click', '.submit-fault', function(e) {
+        e.preventDefault();
+        let formData = new FormData();
+        let hasData = false;
+
+        // Collect data from all forms
+        $('.fault-form').each(function() {
+            let form = $(this);
+            let formId = form.data('form-id');
+            let location = form.find(`input[name="location${formId > 1 ? '_' + formId : ''}"]`).val();
+            let description = form.find(`textarea[name="description${formId > 1 ? '_' + formId : ''}"]`).val();
+            let image1 = form.find(`input[name="image1${formId > 1 ? '_' + formId : ''}"]`)[0].files[0];
+            let image2 = form.find(`input[name="image2${formId > 1 ? '_' + formId : ''}"]`)[0].files[0];
+            let image3 = form.find(`input[name="image3${formId > 1 ? '_' + formId : ''}"]`)[0].files[0];
+            let image4 = form.find(`input[name="image4${formId > 1 ? '_' + formId : ''}"]`)[0].files[0];
+            let image5 = form.find(`input[name="image5${formId > 1 ? '_' + formId : ''}"]`)[0].files[0];
+
+            // Check if form has any data
+            if (location || description || image1 || image2 || image3 || image4 || image5) {
+                formData.append(`location_${formId}`, location || '');
+                formData.append(`description_${formId}`, description || '');
+                if (image1) formData.append(`image1_${formId}`, image1);
+                if (image2) formData.append(`image2_${formId}`, image2);
+                if (image3) formData.append(`image3_${formId}`, image3);
+                if (image4) formData.append(`image4_${formId}`, image4);
+                if (image5) formData.append(`image5_${formId}`, image5);
+                hasData = true;
+            }
+        });
+
+        // Submit if there is data
+        if (hasData) {
+            $.ajax({
+                url: '{% url "fault_list" %}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function() {
+                    window.location.reload();
+                },
+                error: function(xhr) {
+                    alert('Error submitting faults: ' + xhr.responseText);
+                }
+            });
+        }
+    });
+
+    // Delete fault with confirmation
+    $(document).on('click', '.delete-fault', function(e) {
+        e.preventDefault();
+        const faultId = $(this).data('id');
+        $('#confirm-delete').data('fault-id', faultId);
+        $('#deleteModal').modal('show');
+    });
+
+    $('#confirm-delete').click(function() {
+        const faultId = $(this).data('fault-id');
+        window.location.href = `/delete/${faultId}/`;
+    });
+});
+</script>
+{% endblock %}
